@@ -18,12 +18,16 @@
 		left: 0;
 		height: 100vh;
 		width: 100vw;
-		background: rgb(255, 255, 255);
+		background: rgb(0, 0, 0);
 		background: linear-gradient(
-			180deg,
-			rgba(255, 255, 255, 1) 0%,
-			rgb(144, 253, 123) 48%,
-			rgb(0, 0, 0) 98%
+			90deg,
+			rgba(0, 0, 0, 1) 0%,
+			rgba(155, 229, 255, 1) 35%,
+			rgba(255, 255, 255, 1) 46%,
+			rgba(255, 255, 255, 1) 50%,
+			rgba(255, 255, 255, 1) 54%,
+			rgba(155, 229, 255, 1) 65%,
+			rgba(0, 0, 0, 1) 100%
 		);
 	}
 </style>
