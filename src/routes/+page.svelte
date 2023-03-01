@@ -1,13 +1,103 @@
 <script>
-	import Navigation from '../lib/Navigation.svelte';
+	import Grid from 'svelte-grid';
+	import gridHelp from 'svelte-grid/build/helper/index.mjs';
+
+	const COLS = 6;
+
+	const id = () => '_' + Math.random().toString(36).substr(2, 9);
+
+	const randomNumberInRange = (min, max) => Math.random() * (max - min) + min;
+
+	let items = [
+
+	];
+
+	const cols = [[1100, 6]];
+
+	function openChat() {
+		if (!chatStatus) {
+			let newItem = {
+				6: gridHelp.item({
+					w: 3,
+					h: 4,
+					x: 0,
+					y: 0
+				}),
+				id: 'chatBox'
+			};
+			let findOutPosition = gridHelp.findSpace(newItem, items, COLS);
+
+			newItem = {
+				...newItem,
+				[COLS]: {
+					...newItem[COLS],
+					...findOutPosition
+				}
+			};
+
+			items = [...items, ...[newItem]];
+			chatStatus = true;
+			console.log(items)
+		}
+	}
+	const remove = (item) => {
+		items = items.filter((value) => value.id !== item.id);
+
+		if (adjustAfterRemove) {
+			items = gridHelp.adjust(items, COLS);
+		}
+	};
+
+	let adjustAfterRemove = true;
+	let chatStatus = false;
 </script>
+
+<head>
+	<script src="https://kit.fontawesome.com/cda086cfbf.js" crossorigin="anonymous"></script>
+</head>
 
 <svelte:head>
 	<title>Live Monitor</title>
 </svelte:head>
 
 <body>
-	<Navigation />
+	<i class="fa-brands fa-tiktok login" />
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<div on:click={openChat}>
+		<i class="openChat fa-solid fa-message" />
+	</div>
+	<div>
+		<i class="fa-solid fa-bell events"></i>
+	</div>
+	<div>
+		<i class="fa-solid fa-stopwatch timerButton"></i>
+	</div>
+	<div>
+		<i class="fa-regular fa-rectangle-list settingsButton"></i>
+	</div>
+	<div class="h-4/5 w-7/8 mx-auto">
+		<Grid Grid bind:items rowHeight={100} let:item let:index let:dataItem {cols} fillSpace={true}>
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<span
+				on:pointerdown={(e) => e.stopPropagation()}
+				on:click={ () => {
+					switch (dataItem.id) {
+						case 'chatBox':
+							if (chatStatus) {
+								remove(dataItem)
+								chatStatus = false;
+							}
+							break;
+					}
+				}
+				}
+				class="remove"
+			>
+				<i class="fa-regular fa-circle-xmark"></i>
+			</span>
+			<div {dataItem} />
+		</Grid>
+	</div>
 </body>
 
 <style>
@@ -29,5 +119,70 @@
 			rgba(155, 229, 255, 1) 65%,
 			rgba(0, 0, 0, 1) 100%
 		);
+	}
+	.openChat {
+		position: fixed;
+		right: 2%;
+		top: 12%;
+		color: white;
+		height: 50px;
+		width: 50px;
+		z-index: 2;
+	}
+	.login {
+		position: fixed;
+		right: 2%;
+		top: 2%;
+		color: white;
+		height: 50px;
+		width: 50px;
+		z-index: 2;
+	}
+
+	.timerButton {
+		position: fixed;
+		right: 2%;
+		top: 32%;
+		color: white;
+		height: 50px;
+		width: 50px;
+		z-index: 2;
+	}
+
+	.events {
+		position: fixed;
+		right: 2%;
+		top: 22%;
+		color: white;
+		height: 50px;
+		width: 50px;
+		z-index: 2;
+	}
+
+	.settingsButton {
+		position: fixed;
+		right: 2%;
+		top: 42%;
+		color: white;
+		height: 50px;
+		width: 50px;
+		z-index: 2;
+
+	}
+
+	:global(.svlt-grid-item) {
+		background-color: #374151;
+		border-radius: 0.5rem;
+	}
+	:global(.svlt-grid-shadow) {
+		background: rgb(104, 104, 104);
+		opacity: 0;
+	}
+	:global(.svlt-grid-resizer) {
+		border-color: cyan !important;
+	}
+	.remove {
+		float: right;
+		margin-right: 1%;
 	}
 </style>
