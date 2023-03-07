@@ -1,4 +1,46 @@
 <script>
+	//functions for handling username and tiktok connection
+	import { writable } from 'svelte/store';
+
+	const messages = writable([]);
+	let username;
+	let url = 'http://localhost:3000/connect';
+	let sseUrl = 'http://localhost:3000/chatStream';
+
+	async function loginPopup() {
+		let uName = prompt('<PLACEHOLDER> Please input your username');
+		if (uName == null || uName == '') {
+			alert('Error: Not a valid username.');
+			loginPopup();
+		} else {
+			username = uName;
+			return await submitUname(username, url).then(handleEvents(messages));
+		}
+	}
+
+	async function submitUname(name, url) {
+		let content = {
+			name: name
+		};
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(content)
+		});
+	}
+	function handleEvents(messages) {
+		let evtSource = new EventSource(sseUrl);
+		evtSource.onevent = function (event) {
+			console.log(event.data);
+			var dataobj = JSON.parse(event.data);
+			messages.update((arr) => arr.connectToStream(dataobj));
+			console.log(event);
+		};
+	}
+	//functions for handling page grid
+
 	import Grid from 'svelte-grid';
 	import gridHelp from 'svelte-grid/build/helper/index.mjs';
 
@@ -8,12 +50,11 @@
 
 	const randomNumberInRange = (min, max) => Math.random() * (max - min) + min;
 
-	let items = [
-
-	];
+	let items = [];
 
 	const cols = [[1100, 6]];
 
+	// Checks to see if chat box is closed, create new chat box on grid
 	function openChat() {
 		if (!chatStatus) {
 			let newItem = {
@@ -37,9 +78,11 @@
 
 			items = [...items, ...[newItem]];
 			chatStatus = true;
-			console.log(items)
+			console.log(items);
 		}
 	}
+
+	//Function for removing the target item from the grid
 	const remove = (item) => {
 		items = items.filter((value) => value.id !== item.id);
 
@@ -61,41 +104,43 @@
 </svelte:head>
 
 <body>
-	<i class="fa-brands fa-tiktok login" />
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<div on:click={loginPopup}>
+		<i class="fa-brands fa-tiktok login" />
+	</div>
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<div on:click={openChat}>
 		<i class="openChat fa-solid fa-message" />
 	</div>
 	<div>
-		<i class="fa-solid fa-bell events"></i>
+		<i class="fa-solid fa-bell events" />
 	</div>
 	<div>
-		<i class="fa-solid fa-stopwatch timerButton"></i>
+		<i class="fa-solid fa-stopwatch timerButton" />
 	</div>
 	<div>
-		<i class="fa-regular fa-rectangle-list settingsButton"></i>
+		<i class="fa-regular fa-rectangle-list settingsButton" />
 	</div>
 	<div class="h-4/5 w-7/8 mx-auto">
 		<Grid Grid bind:items rowHeight={100} let:item let:index let:dataItem {cols} fillSpace={true}>
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<span
-				on:pointerdown={(e) => e.stopPropagation()}
-				on:click={ () => {
-					switch (dataItem.id) {
-						case 'chatBox':
+			{#if dataItem.id == 'chatBox'}
+				<span
+					on:pointerdown={(e) => e.stopPropagation()}
+					on:click={() => {
+						if (dataItem.id == 'chatBox') {
 							if (chatStatus) {
-								remove(dataItem)
+								remove(dataItem);
 								chatStatus = false;
 							}
-							break;
-					}
-				}
-				}
-				class="remove"
-			>
-				<i class="fa-regular fa-circle-xmark"></i>
-			</span>
-			<div {dataItem} />
+						}
+					}}
+					class="remove"
+				>
+					<i class="fa-regular fa-circle-xmark" />
+				</span>
+				<div>{messages}</div>
+			{/if}
 		</Grid>
 	</div>
 </body>
@@ -167,7 +212,6 @@
 		height: 50px;
 		width: 50px;
 		z-index: 2;
-
 	}
 
 	:global(.svlt-grid-item) {
