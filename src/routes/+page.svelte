@@ -1,11 +1,35 @@
 <script>
-	//functions for handling username and tiktok connection
-	import { writable } from 'svelte/store';
+	//Initializing websocket client
+	import { io } from '$lib/webSocketConnection.js';
+	import { onMount } from 'svelte';
 
-	const messages = writable([]);
+	let chatMessages = [];
+
+	onMount(() => {
+		io.on('connectionSuccessful', () => {
+			loggedIn = true;
+		});
+
+		io.on('connectionUnsuccessful', () => {
+			loggedIn = false;
+		});
+
+		io.on('chatMessage', (data) => {
+			const payload = JSON.parse(data);
+			const messageInfo = {
+				username: payload.nickname,
+				chat: payload.msgContent,
+				profilePic: payload.profilePictureUrl,
+				color: payload.color
+			};
+			chatMessages.push(messageInfo);
+		});
+	});
+
+	//functions for handling username and tiktok connection
+
 	let username;
-	let url = 'http://localhost:3000/connect';
-	let sseUrl = 'http://localhost:3000/chatStream';
+	let loggedIn = false;
 
 	async function loginPopup() {
 		let uName = prompt('<PLACEHOLDER> Please input your username');
@@ -14,85 +38,66 @@
 			loginPopup();
 		} else {
 			username = uName;
-			return await submitUname(username, url).then(handleEvents(messages));
+			io.emit('tryConnection', username);
 		}
 	}
 
-	async function submitUname(name, url) {
-		let content = {
-			name: name
-		};
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(content)
-		});
-	}
-	function handleEvents(messages) {
-		let evtSource = new EventSource(sseUrl);
-		evtSource.onevent = function (event) {
-			console.log(event.data);
-			var dataobj = JSON.parse(event.data);
-			messages.update((arr) => arr.connectToStream(dataobj));
-			console.log(event);
-		};
-	}
-	//functions for handling page grid
+	import Grid from 'svelte-grid-extended';
 
-	import Grid from 'svelte-grid';
-	import gridHelp from 'svelte-grid/build/helper/index.mjs';
+	const items = [{ id: 'chatBox', x: 0, y: 0, w: 3, h: 6, data: chatMessages }];
 
-	const COLS = 6;
+	// import { fit, parent_style } from '@leveluptuts/svelte-fit';
+	// import Grid from 'svelte-grid';
+	// import gridHelp from 'svelte-grid/build/helper/index.mjs';
 
-	const id = () => '_' + Math.random().toString(36).substr(2, 9);
+	// const COLS = 6;
 
-	const randomNumberInRange = (min, max) => Math.random() * (max - min) + min;
+	// const id = () => '_' + Math.random().toString(36).substr(2, 9);
 
-	let items = [];
+	// const randomNumberInRange = (min, max) => Math.random() * (max - min) + min;
 
-	const cols = [[1100, 6]];
+	// let items = [];
 
-	// Checks to see if chat box is closed, create new chat box on grid
+	// const cols = [[1100, 6]];
+
+	// // Checks to see if chat box is closed, create new chat box on grid
 	function openChat() {
-		if (!chatStatus) {
-			let newItem = {
-				6: gridHelp.item({
-					w: 3,
-					h: 4,
-					x: 0,
-					y: 0
-				}),
-				id: 'chatBox'
-			};
-			let findOutPosition = gridHelp.findSpace(newItem, items, COLS);
-
-			newItem = {
-				...newItem,
-				[COLS]: {
-					...newItem[COLS],
-					...findOutPosition
-				}
-			};
-
-			items = [...items, ...[newItem]];
-			chatStatus = true;
-			console.log(items);
-		}
+		// 	if (!chatStatus) {
+		// 		let newItem = {
+		// 			6: gridHelp.item({
+		// 				w: 3,
+		// 				h: 4,
+		// 				x: 0,
+		// 				y: 0
+		// 			}),
+		// 			id: 'chatBox',
+		// 			msgs: chatMessages
+		// 		};
+		// 		let findOutPosition = gridHelp.findSpace(newItem, items, COLS);
+		// 		newItem = {
+		// 			...newItem,
+		// 			[COLS]: {
+		// 				...newItem[COLS],
+		// 				...findOutPosition
+		// 			}
+		// 		};
+		// 		items = [...items, ...[newItem]];
+		// 		chatStatus = true;
+		// 		console.log(items);
+		// 	}
 	}
 
-	//Function for removing the target item from the grid
-	const remove = (item) => {
-		items = items.filter((value) => value.id !== item.id);
+	// //Function for removing the target item from the grid
+	// const remove = (item) => {
+	// 	items = items.filter((value) => value.id !== item.id);
 
-		if (adjustAfterRemove) {
-			items = gridHelp.adjust(items, COLS);
-		}
-	};
+	// 	if (adjustAfterRemove) {
+	// 		items = gridHelp.adjust(items, COLS);
+	// 	}
+	// };
 
-	let adjustAfterRemove = true;
-	let chatStatus = false;
+	// let adjustAfterRemove = true;
+	// let chatStatus = false;
 </script>
 
 <head>
@@ -109,6 +114,7 @@
 		<i class="fa-brands fa-tiktok login" />
 	</div>
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- {#if loggedIn} -->
 	<div on:click={openChat}>
 		<i class="openChat fa-solid fa-message" />
 	</div>
@@ -121,10 +127,42 @@
 	<div>
 		<i class="fa-regular fa-rectangle-list settingsButton" />
 	</div>
-	<div class="h-4/5 w-7/8 mx-auto">
-		<Grid Grid bind:items rowHeight={100} let:item let:index let:dataItem {cols} fillSpace={true}>
+	<!-- {/if} -->
+	<div class="h-full w-full mx-auto">
+		<Grid
+			{items}
+			cols={12}
+			rows={12}
+			bounds={true}
+			class="grid-container"
+			itemClass="grid-item"
+			itemActiveClass="grid-item-active"
+			itemPreviewClass="rounded"
+		>
+			{#each items as item}
+				{#if (item.id === 'chatBox')}
+					<ul>
+						{#each item.data as msg}
+							<li>
+								<img
+									height="5"
+									width="5"
+									src={msg.profilePic}
+									alt={msg.username + "'s Profile Picture"}
+								/>
+								<p>{msg.username}</p>
+								{msg.chat}
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			{/each}
+		</Grid>
+
+		<!-- 	<Grid Grid bind:items rowHeight={100} let:item let:index let:dataItem {cols} fillSpace={true}>
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			{#if dataItem.id == 'chatBox'}
+		<!-- {#if dataItem.id == 'chatBox'}
+			 <div class="overflow-auto">
 				<span
 					on:pointerdown={(e) => e.stopPropagation()}
 					on:click={() => {
@@ -139,9 +177,16 @@
 				>
 					<i class="fa-regular fa-circle-xmark" />
 				</span>
-				<div>{messages}</div>
+				<div style={parent_style}>
+				<ul class="w-95/100 h-95/100 mt-2 ml-2 overflow-y-hidden overflow-x-hidden scrollbar-thin">
+					{#each dataItem.msgs as incMsg}
+						<li use:fit={{min_size: 5, max_size:16}}><img class="inline h-5 w-5" src={incMsg.profilePic} alt="user pfp"><p class="inline" style:color = {incMsg.color}>{incMsg.username + ': '}</p>{incMsg.chat}</li>
+					{/each}
+				</ul>
+				</div>
+			</div>
 			{/if}
-		</Grid>
+		</Grid> -->
 	</div>
 </body>
 
@@ -225,8 +270,29 @@
 	:global(.svlt-grid-resizer) {
 		border-color: cyan !important;
 	}
-	.remove {
+	:global(.grid-container) {
+		opacity: 1;
+	}
+
+	:global(.grid-item) {
+		background-color: #374151;
+		border-radius: 0.5rem;
+	}
+
+	:global(.grid-item-active) {
+		opacity: 0.8;
+	}
+
+	/* tailwind classes */
+	/* :global(.bg-red-500) {
+		background-color: rgb(202, 33, 33);
+	} */
+
+	:global(.rounded) {
+		border-radius: 0.25rem;
+	}
+	/* .remove {
 		float: right;
 		margin-right: 1%;
-	}
+	} */
 </style>
