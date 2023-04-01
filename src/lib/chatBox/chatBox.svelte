@@ -1,5 +1,4 @@
 <script>
-	import { bind } from 'svelte/internal';
 	import { chatProps } from '../stores.js';
 
 	let cProps;
@@ -7,49 +6,11 @@
 
 	chatProps.subscribe((value) => {
 		cProps = JSON.parse(value);
-
-		switch (cProps.variant) {
-			case 'left_full':
-				chatVariant =
-					'backdrop-blur-sm bg-white/50 shadow-2xl rounded-lg col-start-1 col-span-4 row-start-1 row-span-4';
-				break;
-			case 'right_full':
-				chatVariant =
-					'backdrop-blur-sm bg-white/50 shadow-2xl rounded-lg col-start-9 col-span-4 row-start-1 row-span-4';
-				break;
-            case 'center_full':
-                chatVariant =
-					'backdrop-blur-sm bg-white/50 shadow-2xl rounded-lg col-start-5 col-span-4 row-start-1 row-span-4';
-                break;
-			case 'top_left_sq':
-				chatVariant =
-					'backdrop-blur-sm bg-white/50 shadow-2xl rounded-lg col-start-1 col-span-4 row-start-1 row-span-2';
-				break;
-			case 'top_right_sq':
-				chatVariant =
-					'backdrop-blur-sm bg-white/50 shadow-2xl rounded-lg col-start-9 col-span-4 row-start-1 row-span-2';
-				break;
-			case 'bottom_left_sq':
-				chatVariant =
-					'backdrop-blur-sm bg-white/50 shadow-2xl rounded-lg col-start-1 col-span-4 row-start-3 row-span-2';
-				break;
-			case 'bottom_right_sq':
-				chatVariant =
-					'backdrop-blur-sm bg-white/50 shadow-2xl rounded-lg col-start-9 col-span-4 row-start-3 row-span-2';
-				break;
-			case 'top_wide':
-				chatVariant =
-					'backdrop-blur-sm bg-white/50 shadow-2xl rounded-lg col-start-1 col-span-12 row-start-1 row-span-2';
-				break;
-			case 'bottom_wide':
-				chatVariant =
-					'backdrop-blur-sm bg-white/50 shadow-2xl rounded-lg col-start-1 col-span-12 row-start-3 row-span-2';
-                break;
-		}
+		chatVariant = cProps.variant;
 	});
 </script>
 
-<div class={"scroll-auto" + chatVariant}>
-    <p class="mx-auto text-center text-zinc-100 text-2xl w-full shadow-bottom-2xl rounded-t-lg">Chat</p>
-	<slot />
+<div class={"backdrop-blur-sm bg-white/50 drop-shadow-2xl scroll-auto rounded-lg " + chatVariant}>
+    <p class="mx-auto text-center text-zinc-100 text-2xl w-full z-5 ring-2 ring-white/25 ring-inset shadow-2xl rounded-t-lg">Chat</p>
+	<slot class="shadow-inner overflow-y-scroll overflow-x-hidden" />
 </div>

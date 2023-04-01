@@ -4,7 +4,9 @@
 	import { onMount, afterUpdate, tick } from 'svelte';
 
 	let chatMessages = [];
-	let element;
+	let chatElement;
+	let evtMessages = [];
+	let evtElement;
 
 	onMount(() => {
 		io.on('connectionSuccessful', () => {
@@ -18,7 +20,11 @@
 		io.on('chatMessage', (data) => {
 			const payload = JSON.parse(data);
 			chatMessages = [...chatMessages, payload];
-			scrollToBottom();
+		});
+
+		io.on('evtMessage', (data) => {
+			const payload = JSON.parse(data);
+			evtMessages = [...evtMessages, payload];
 		});
 	});
 
@@ -43,29 +49,42 @@
 	import ContentGrid from '../lib/contentGrid/contentGrid.svelte';
 	import Nav from '../lib/nav/nav.svelte';
 	import ChatBox from '../lib/chatBox/chatBox.svelte';
-	import { chatProps } from '../lib/stores.js';
+	import EvtBox from '../lib/evtBox.svelte/evtBox.svelte';
+	import { chatProps, evtProps } from '../lib/stores.js';
 
 	let cProps;
+	let eProps;
+
 	chatProps.subscribe((value) => {
 		cProps = JSON.parse(value);
 	});
 
-	console.info(chatProps);
-	console.info(cProps);
+	evtProps.subscribe((value) => {
+		eProps = JSON.parse(value);
+	});
+
 	function openChat() {
 		cProps.open = !cProps.open;
 	}
+
+	function openEvt() {
+		eProps.open = !eProps.open;
+	}
+
 	afterUpdate(() => {
-		console.log('afterUpdate');
-		if (chatMessages) scrollToBottom(element);
+		if (chatMessages) scrollToBottom(chatElement);
 	});
-	$: if (chatMessages && element) {
-		console.log('tick');
-		scrollToBottom(element);
+	$: if (chatMessages && chatElement) {
+		scrollToBottom(chatElement);
 	}
 	const scrollToBottom = async (node) => {
 		node.scroll({ top: node.scrollHeight, behavior: 'smooth' });
 	};
+
+	function isHighlighted(msgBool) {
+		if (msgBool) return 'background-sky-500 rounded-sm text-zinc-600';
+		else return '';
+	}
 </script>
 
 <head>
@@ -90,7 +109,8 @@
 				class="openChat text-zinc-100  fa-solid fa-message hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
 		</div>
-		<div>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<div on:click={openEvt}>
 			<i
 				class="fa-regular  text-zinc-100 fa-bell events hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
@@ -112,26 +132,73 @@
 			{#if cProps.open}
 				<ChatBox>
 					<ul
-						class="overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
-						bind:this={element}
+						class="h-[95%] w-7/8 overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
+						bind:this={chatElement}
 					>
 						{#each chatMessages as message}
-							<li>
+							<li class={isHighlighted(message.hightlightMsg)}>
 								<img
-									height="12"
-									width="12"
+									height="15"
+									width="15"
 									class="rounded-md inline"
 									src={message.profilePictureUrl}
 									alt={message.nickname + "'s Profile Picture"}
 								/>
 								<p class="inline" style:color={message.color}>{' ' + message.nickname}</p>
-								<p class="break-words inline text-gray-500 whitespace-normal">
+								<p class="break-words inline text-gray-700 whitespace-normal">
 									{': ' + message.msgContent}
 								</p>
 							</li>
 						{/each}
 					</ul>
 				</ChatBox>
+			{/if}
+			{#if eProps.open}
+				<EvtBox>
+					<ul
+						class="h-[95%] w-7/8 overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
+						bind:this={evtElement}
+					/>
+					{#each evtMessages as message, i}
+						{#if i % 0 == 1}
+							<li class="background-sky-200 ring-2 ring-white/25">
+								{#if message.type == 'gift'}
+									<img
+										class="inline"
+										height="25"
+										width="25"
+										src={message.icon}
+										alt={message.nickname + "'s Profile Picture"}
+									/>
+									<p class="inline">{message.giftType}</p>
+									<p class="inline">{' x ' + message.giftCount}</p>
+									<p class="inline">{message.nickname}</p>
+									<p class="inline">{message.timeStamp}</p>
+								{:else if message.type == 'subscribe'}
+									
+								{/if}
+							</li>
+						{:else}
+							<li class="background-sky-400 ring-2 ring-white/25">
+								{#if message.type == 'gift'}
+									<img
+										class="inline"
+										height="25"
+										width="25"
+										src={message.icon}
+										alt={message.nickname + "'s Profile Picture"}
+									/>
+									<p class="inline">{message.giftType}</p>
+									<p class="inline">{' x ' + message.giftCount}</p>
+									<p class="inline">{message.nickname}</p>
+									<p class="inline">{message.timeStamp}</p>
+								{:else if message.type == 'subscribe'}
+									
+								{/if}
+							</li>
+						{/if}
+					{/each}
+				</EvtBox>
 			{/if}
 		</ContentGrid>
 	</div>
