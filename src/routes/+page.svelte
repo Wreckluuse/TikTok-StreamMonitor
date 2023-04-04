@@ -85,6 +85,18 @@
 		if (msgBool) return 'background-sky-500 rounded-sm text-zinc-600';
 		else return '';
 	}
+	function calculateCols(view) {
+		let out = 0;
+		for (let obj in view) {
+			let len = 0;
+			for (let i in obj) {
+				if (i == true) len += 1;
+			}
+			if (len >= out) out = len;
+		}
+		return out;
+	}
+	let tabCount;
 </script>
 
 <head>
@@ -158,46 +170,77 @@
 					<ul
 						class="h-[95%] w-7/8 overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
 						bind:this={evtElement}
-					/>
-					{#each evtMessages as message, i}
-						{#if i % 0 == 1}
-							<li class="background-sky-200 ring-2 ring-white/25">
-								{#if message.type == 'gift'}
-									<img
-										class="inline"
-										height="25"
-										width="25"
-										src={message.icon}
-										alt={message.nickname + "'s Profile Picture"}
-									/>
-									<p class="inline">{message.giftType}</p>
-									<p class="inline">{' x ' + message.giftCount}</p>
-									<p class="inline">{message.nickname}</p>
-									<p class="inline">{message.timeStamp}</p>
-								{:else if message.type == 'subscribe'}
-									
-								{/if}
-							</li>
-						{:else}
-							<li class="background-sky-400 ring-2 ring-white/25">
-								{#if message.type == 'gift'}
-									<img
-										class="inline"
-										height="25"
-										width="25"
-										src={message.icon}
-										alt={message.nickname + "'s Profile Picture"}
-									/>
-									<p class="inline">{message.giftType}</p>
-									<p class="inline">{' x ' + message.giftCount}</p>
-									<p class="inline">{message.nickname}</p>
-									<p class="inline">{message.timeStamp}</p>
-								{:else if message.type == 'subscribe'}
-									
-								{/if}
-							</li>
-						{/if}
-					{/each}
+					>
+						{#each evtMessages as message, i}
+							{#if i % 0 == 1}
+								<li
+									class={'background-sky-200 ring-2 ring-white/25 grid grid-cols-' +
+										eProps.colCount}
+								>
+									{#if message.type == 'gift' && eProps.view.gift.active == true}
+										<p>
+											{message.nickname + ' just gifted x' + message.giftCount}<img
+												class="inline"
+												src={message.icon}
+												alt={message.giftType}
+												height="25"
+												width="25"
+											/>{message.giftType + "'s"}
+										</p>
+										{#if eProps.view.gift.value == true}
+											<p>{message.priceValue}</p>
+										{/if}
+										<p>{message.timeStamp}</p>
+									{:else if message.type == 'subscribe' && eProps.view.subs.active == true}
+										<p>{message.nickname + ' just subscribed!'}</p>
+										{#if eProps.view.subs.recurring == true}
+											<p>{'x' + message.months}</p>
+										{/if}
+										<p>{message.timeStamp}</p>
+									{:else if message.type == 'follow' && eProps.view.follows.active == true}
+										<p>{message.nickname + ' just followed!'}</p>
+										<p>{message.timeStamp}</p>
+									{:else if message.type == 'share' && eProps.view.shares.active == true}
+										<p>{message.nickname + ' just shared the stream!'}</p>
+										<p>{message.timeStamp}</p>
+									{/if}
+								</li>
+							{:else}
+								<li
+									class={'background-sky-400 ring-2 ring-white/25 grid grid-cols-' +
+										eProps.colCount}
+								>
+									{#if message.type == 'gift' && eProps.view.gift.active == true}
+										<p class="inline">
+											{message.nickname + ' just gifted x' + message.giftCount}<img
+												class="inline"
+												src={message.icon}
+												alt={message.giftType}
+												height="25"
+												width="25"
+											/>{message.giftType + "'s"}
+										</p>
+										{#if eProps.view.gift.value == true}
+											<p class="inline">{message.priceValue}</p>
+										{/if}
+										<p class="inline">{message.timeStamp}</p>
+									{:else if message.type == 'subscribe' && eProps.view.subs.active == true}
+										<p class="inline">{message.nickname + ' just subscribed!'}</p>
+										{#if eProps.view.subs.recurring == true}
+											<p class="inline">{'x' + message.months}</p>
+										{/if}
+										<p class="inline">{message.timeStamp}</p>
+									{:else if message.type == 'follow' && eProps.view.follows.active == true}
+										<p class="inline">{message.nickname + ' just followed!'}</p>
+										<p class="inline">{message.timeStamp}</p>
+									{:else if message.type == 'share' && eProps.view.shares.active == true}
+										<p class="inline">{message.nickname + ' just shared the stream!'}</p>
+										<p class="inline">{message.timeStamp}</p>
+									{/if}
+								</li>
+							{/if}
+						{/each}
+					</ul>
 				</EvtBox>
 			{/if}
 		</ContentGrid>
