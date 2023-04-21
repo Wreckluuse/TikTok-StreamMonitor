@@ -5,15 +5,11 @@
 	import ContentGrid from '../lib/contentGrid/contentGrid.svelte';
 	import Nav from '../lib/nav/nav.svelte';
 	import ChatBox from '../lib/chatBox/chatBox.svelte';
-	import EvtBox from '../lib/evtBox.svelte/evtBox.svelte';
-	import {
-		chatProps,
-		evtProps,
-		username,
-		viewCount,
-		loggedIn,
-		followCount
-	} from '../lib/stores.js';
+	import { modColor, subColor, defaultColor } from '../lib/chatStores';
+	import { evtOpen, giftInfo, subInfo, followInfo, shareInfo } from '../lib/eventStores';
+	import { username, followCount, viewCount, loggedIn } from '../lib/userStores';
+	import EvtBox from '../lib/evtBox/evtBox.svelte';
+	import Modal from '../lib/modal/modal.svelte';
 
 	let chatMessages = [];
 	let chatElement;
@@ -34,7 +30,7 @@
 			viewCount.update((n) => (n = payload.viewers));
 			username.update((name) => (name = payload.streamerName));
 			loggedIn.update((p) => (p = true));
-		})
+		});
 
 		io.on('chatMessage', (data) => {
 			const payload = JSON.parse(data);
@@ -51,12 +47,11 @@
 			chatMessages = [];
 			evtMessages = [];
 		});
-
 	});
 
 	//functions for handling username and tiktok connection
 
-	async function loginPopup() {
+	function loginPopup() {
 		let uName = prompt('<PLACEHOLDER> Please input your username');
 		if (uName == null || uName == '') {
 			alert('Error: Not a valid username.');
@@ -68,12 +63,25 @@
 
 	//Main Content
 
-	let cProps;
-	let eProps;
 	let uname;
 	let followers;
 	let viewers;
 	let loggedInState;
+	let cboxOpen = false;
+	let eboxOpen = false;
+	let settingsboxOpen = false;
+	let mColor;
+	let sColor;
+	let dColor;
+	let displayGifts;
+	let displaySubs;
+	let displayFollows;
+	let displayShares;
+	let showModal = false;
+	let modalNickname = '';
+	let modalPfp = '';
+	let modalFollowCount = 0;
+	let modalColor = '#9ca3af;';
 
 	username.subscribe((value) => {
 		uname = value;
@@ -91,25 +99,84 @@
 		loggedInState = value;
 	});
 
-	chatProps.subscribe((value) => {
-		cProps = JSON.parse(value);
+	giftInfo.subscribe((value) => {
+		displayGifts = value;
 	});
 
-	evtProps.subscribe((value) => {
-		eProps = JSON.parse(value);
+	subInfo.subscribe((value) => {
+		displaySubs = value;
 	});
+
+	followInfo.subscribe((value) => {
+		displayFollows = value;
+	});
+
+	shareInfo.subscribe((value) => {
+		displayShares = value;
+	});
+
+	defaultColor.subscribe((value) => {
+		dColor = value;
+	});
+
+	modColor.subscribe((value) => {
+		mColor = value;
+	})
+
+	subColor.subscribe((value) => {
+		sColor = value;
+	})
+
+	function getViewerColor(roles) {
+		let outColor;
+		let outRole;
+
+		for (let i = 0; i < roles.length; i++) {
+			if (roles[i].value == true) {
+				outRole = roles[i].role;
+				break;
+			}
+		}
+		switch(outRole) {
+			case "mod":
+				outColor = mColor;
+				break;
+			case "sub":
+				outColor = sColor;
+				break;
+			case "follower":
+				outColor = dColor;
+				break;
+			default:
+				outColor = dColor;
+		}
+		return outColor;
+	}
 
 	function openChat() {
-		cProps.open = !cProps.open;
+		cboxOpen = !cboxOpen;
 	}
 
 	function openEvt() {
-		eProps.open = !eProps.open;
+		eboxOpen = !eboxOpen;
+	}
+
+	function openCfg() {
+		settingsboxOpen = !settingsboxOpen;
+	}
+
+	function openModal(name, pfp, fCount, color, badges) {
+		showModal = true;
+		modalNickname = name;
+		modalPfp = pfp;
+		modalFollowCount = fCount;
+		modalColor = color;
+		modalBadges = badges;
 	}
 
 	afterUpdate(() => {
-		if (cProps.open && chatMessages.length > 0) scrollToBottom(chatElement);
-		if (eProps.open && evtMessages.length > 0) scrollToBottom(evtElement);
+		if (cboxOpen && chatMessages.length > 0) scrollToBottom(chatElement);
+		if (eboxOpen && evtMessages.length > 0) scrollToBottom(evtElement);
 	});
 
 	const scrollToBottom = async (node) => {
@@ -120,28 +187,6 @@
 		if (msgBool) return 'background-sky-500 rounded-sm text-zinc-600';
 		else return '';
 	}
-
-	function evtCols(schema) {
-		eProps.view.gift.cols = currentCols(schema.gift);
-		eProps.view.subs.cols = currentCols(schema.subs);
-		eProps.view.follows.cols = currentCols(schema.follows);
-		eProps.view.shares.cols = currentCols(schema.shares);
-	}
-
-	function currentCols(obj) {
-		let count = 0;
-		for (let item in obj) {
-			if (item === true) count++;
-		}
-		return count;
-	}
-
-	let localColStates = {
-		gifts: eProps.view.gift.colCount,
-		subs: eProps.view.subs.colCount,
-		follows: eProps.view.follows.colCount,
-		shares: eProps.view.shares.colCount
-	};
 
 	$: if (chatMessages.length > 0 && chatElement) {
 		scrollToBottom(chatElement);
@@ -160,7 +205,6 @@
 		follow: 'background-sky-200 ring-2 h-[10%] grid grid-cols-2 text-justify ring-white/25 ',
 		share: 'background-sky-200 ring-2 h-[10%] grid grid-cols-2 text-justify ring-white/25 '
 	};
-
 </script>
 
 <head>
@@ -172,9 +216,11 @@
 </svelte:head>
 
 <body>
+	<Modal {modalNickname} {modalPfp} {modalFollowCount} {modalColor} bind:showModal />
+
 	{#if loggedInState}
 		<div
-			class="mt-5 ml-[5%] fixed backdrop-blur-sm bg-white/50 shadow-2xl rounded-md grid grid-rows-auto grid-gap-2 h-auto w-fit ring-sky-100 px-5 pb-2 text-gray-700"
+			class="mt-5 ml-[5%] fixed backdrop-blur-sm bg-white/50 shadow-2xl rounded-md grid grid-rows-auto grid-gap-2 h-auto w-[15%] ring-sky-100 px-5 pb-2 text-gray-700"
 		>
 			<div>
 				<div name="inline currentStreamer">
@@ -188,19 +234,12 @@
 					{viewers}
 				</div>
 			</div>
-			<div>
-				<button on:click={disconnect} class="rounded-md bg-sky-200 w-[40%] ml-[30%] mr-[30%] mt-5"
-					>Logout</button
-				>
-			</div>
 		</div>
 	{:else}
 		<div
-			class="mt-5 ml-[2%] fixed backdrop-blur-sm bg-white/50 shadow-2xl h-[10%] w-[20%] ring-sky-100 text-gray-700 rounded-md "
+			class="mt-5 ml-[2%] fixed backdrop-blur-sm bg-white/50 shadow-2xl h-[10%] w-[15%] ring-sky-100 text-gray-700 rounded-md "
 		>
-		<p class="text-center mt-5">
-			Stream disconnected
-		</p>
+			<p class="text-center mt-5">Stream disconnected</p>
 		</div>
 	{/if}
 	<Nav>
@@ -227,49 +266,91 @@
 				class="fa-solid text-zinc-100  fa-stopwatch timerButton hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
 		</div>
-		<div>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<div on:click={openCfg}>
 			<i
-				class="fa-regular text-zinc-100  fa-rectangle-list settingsButton hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="fa-regular text-zinc-100 fa-solid fa-gear settingsButton hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
 		</div>
 	</Nav>
-
+	{#if settingsboxOpen}
+		<div
+			class="top-5 pt-2 right-7 fixed backdrop-blur-sm bg-white/50 shadow-2xl rounded-md h-min  w-[20%] ring-sky-100 px-5 pb-2 text-gray-700"
+		>
+			<div class="grid grid-rows-auto gap-2 w-[30%] h-[98%]">
+				<button class="btn text-gray-500 btn-primary btn-xs"> Chat </button>
+				<button class="btn text-gray-500 btn-accent btn-xs"> Events </button>
+				<button class="btn text-gray-500 btn-success btn-xs"> Timer </button>
+			</div>
+			<div class="fixed right-4 top-1 h-[90%] w-[60%] right-2 grid grid-rows-2 grid-cols-2 gap-1">
+				<div class="bg-gray-300 rounded-sm" />
+				<div class="bg-gray-300 rounded-sm" />
+				<div class="bg-gray-300 rounded-sm" />
+				<div class="bg-gray-300 rounded-sm" />
+			</div>
+		</div>
+	{/if}
 	<div class="h-5/6 w-7/8 ml-4 mr-4">
 		<ContentGrid>
-			{#if cProps.open}
+			{#if cboxOpen}
 				<ChatBox>
 					<ul
-						class="h-[90%] w-[98%] overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
+						class="h-[90%] w-[98%] mt-2 overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
 						bind:this={chatElement}
 					>
 						{#each chatMessages as message}
-							<li class={isHighlighted(message.hightlightMsg)}>
-								<img
-									height="15"
-									width="15"
-									class="rounded-md inline"
-									src={message.profilePictureUrl}
-									alt={message.nickname + "'s Profile Picture"}
-								/>
-								<p class="inline" style:color={message.color}>{' ' + message.nickname}</p>
-								<p class="break-words inline text-gray-700 whitespace-normal">
-									{': ' + message.msgContent}
-								</p>
+							<!-- svelte-ignore a11y-click-events-have-key-events -->
+							<li
+								on:click={openModal(
+									message.nickname,
+									message.profilePictureUrl,
+									message.followCount,
+									message.color
+								)}
+								class="inline h-[7%] grid grid-cols-2"
+							>
+								<div class="col-start-1 col-end-2 w-full">
+									<img
+										height="20"
+										width="20"
+										class="rounded-md inline"
+										src={message.profilePictureUrl}
+										alt={message.nickname + "'s Profile Picture"}
+									/>
+									<p style:color={message.color} class="inline">{' ' + message.nickname}</p>
+									<p class="break-words inline text-gray-700 whitespace-normal">
+										{': ' + message.msgContent}
+									</p>
+								</div>
+								<div class="col-start-2 col-end-2 w-full">
+									<p class="float-right text-left mr-5 text-gray-700 inline">{message.timeStamp}</p>
+								</div>
 							</li>
 						{/each}
 					</ul>
 				</ChatBox>
 			{/if}
-			{#if eProps.open}
+			{#if eboxOpen}
 				<EvtBox>
 					<ul
-						class="h-[90%] w-[98%] text-gray-700 overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
+						class="divide-y divide-solid mt-2 h-[90%] w-[98%] text-gray-700 overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
 						bind:this={evtElement}
 					>
 						{#each evtMessages as message, i}
-							{#if i % 0 == 1}
-								{#if message.type == 'gift' && eProps.view.gift.active == true}
-									<li class={listClasses.gift}>
+							{#if message.type == 'gift' && displayGifts == true}
+								<li class="grid grid-cols-7 mx-5% w-[95%] h-[7%] rounded-md">
+									<!-- svelte-ignore a11y-click-events-have-key-events -->
+									<div
+										on:click={openModal(
+											message.nickname,
+											message.profilePictureUrl,
+											message.followCount,
+											message.color
+										)}
+										style={'background-image: url(' + message.profilePictureUrl + ')'}
+										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-gray-500 ml-2 grid grid-cols-3 grid-rows-"
+									/>
+									<div class="w-full col-start-3 col-end-7 text-left float-left">
 										<p>
 											{message.nickname + ' just gifted x' + message.giftCount}
 											{message.giftType + "'s "}<img
@@ -279,96 +360,76 @@
 												height="25"
 												width="25"
 											/>
+											{' (' + message.priceValue + ')'}
 										</p>
-										<div
-											class="inline w-[30%] h-[90%] grid grid-rows-auto grid-gap-1  ring ring-gap-2 rounded-lg"
-										>
-											{#if eProps.view.gift.value == true}
-												<p>{message.priceValue}</p>
-											{/if}
-											<p class="inline">{message.timeStamp}</p>
-										</div>
-									</li>
-								{:else if message.type == 'subscribe' && eProps.view.subs.active == true}
-									<li class={listClasses.sub}>
-										<p>{message.nickname + ' just subscribed!'}</p>
-										{#if eProps.view.subs.recurring == true}
-											<p>{'x' + message.months}</p>
-										{/if}
-										<div
-											class="inline w-[30%] h-[90%] grid grid-rows-auto grid-gap-2  ring ring-gap-2 rounded-lg"
-										>
-											<p>{message.timeStamp}</p>
-										</div>
-									</li>
-								{:else if message.type == 'follow' && eProps.view.follows.active == true}
-									<li class={listClasses.follow}>
+									</div>
+									<div class="col-start-7 col-end-7 text-right float-right mr-5">
+										{message.timeStamp}
+									</div>
+								</li>
+							{:else if message.type == 'subscribe' && displaySubs == true}
+								<li class="grid grid-cols-7 mx-5% w-[95%] h-[6%] rounded-md">
+									<!-- svelte-ignore a11y-click-events-have-key-events -->
+									<div
+										on:click={openModal(
+											message.nickname,
+											message.profilePictureUrl,
+											message.followCount,
+											message.color
+										)}
+										style={'background-image: url(' + message.profilePictureUrl + ')'}
+										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-gray-500 ml-2 grid grid-cols-3 grid-rows-"
+									/>
+									<div class="w-full col-start-3 col-end-7 text-left float-left">
+										<p>
+											{message.nickname +
+												' just subscribed! (x' +
+												message.months +
+												' month streak)'}
+										</p>
+									</div>
+									<div class="col-start-7 col-end-7 text-right float-right mr-5">
+										{message.timeStamp}
+									</div>
+								</li>
+							{:else if message.type == 'follow' && displayFollows == true}
+								<li class="grid grid-cols-7 mx-5% w-[95%] h-[6%] rounded-md">
+									<!-- svelte-ignore a11y-click-events-have-key-events -->
+									<div
+										on:click={openModal(
+											message.nickname,
+											message.profilePictureUrl,
+											message.followCount,
+											message.color
+										)}
+										style={'background-image: url(' + message.profilePictureUrl + ')'}
+										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-gray-500 ml-2 grid grid-cols-3 grid-rows-"
+									/>
+									<div class="w-full col-start-3 col-end-7 text-left float-left">
 										<p>{message.nickname + ' just followed!'}</p>
-										<div
-											class="inline w-[30%] h-[90%] grid grid-rows-auto grid-gap-2  ring ring-gap-2 rounded-lg"
-										>
-											<p>{message.timeStamp}</p>
-										</div>
-									</li>
-								{:else if message.type == 'share' && eProps.view.shares.active == true}
-									<li class={listClasses.share}>
+									</div>
+									<div class="col-start-7 col-end-7 text-right float-right mr-5">
+										{message.timeStamp}
+									</div>
+								</li>
+							{:else if message.type == 'share' && displayShares == true}
+								<li class="grid grid-cols-7 mx-5% w-[95%] h-[6%] rounded-md">
+									<!-- svelte-ignore a11y-click-events-have-key-events -->
+									<div
+										on:click={openModal(
+											message.nickname,
+											message.profilePictureUrl,
+											message.followCount,
+											message.color
+										)}
+										style={'background-image: url(' + message.profilePictureUrl + ')'}
+										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-gray-500 ml-2 grid grid-cols-3 grid-rows-"
+									/>
+									<div class="w-full col-start-3 col-end-7 text-left float-left">
 										<p>{message.nickname + ' just shared the stream!'}</p>
-										<div
-											class="inline w-[50%] h-[90%] grid grid-rows-auto grid-gap-2  ring ring-gap-2 rounded-lg"
-										>
-											<p>{message.timeStamp}</p>
-										</div>
-									</li>
-								{/if}
-							{:else if message.type == 'gift' && eProps.view.gift.active == true}
-								<li class={listClasses.gift}>
-									<p class="inline">
-										{message.nickname + ' just gifted x' + message.giftCount}
-										{message.giftType + "'s"}<img
-											class="inline"
-											src={message.icon}
-											alt={message.giftType}
-											height="25"
-											width="25"
-										/>
-									</p>
-									<div
-										class="inline w-[30%] h-[90%] grid grid-rows-auto grid-gap-2  ring ring-gap-2 rounded-lg"
-									>
-										{#if eProps.view.gift.value == true}
-											<p class="inline">{message.priceValue}</p>
-										{/if}
-										<p class="inline">{message.timeStamp}</p>
 									</div>
-								</li>
-							{:else if message.type == 'subscribe' && eProps.view.subs.active == true}
-								<li class="listClasses.sub}">
-									<p class="inline">{message.nickname + ' just subscribed!'}</p>
-									<div
-										class="inline w-[30%] h-[90%] grid grid-rows-auto grid-gap-2  ring ring-gap-2 rounded-lg"
-									>
-										{#if eProps.view.subs.recurring == true}
-											<p class="inline">{'x' + message.months}</p>
-										{/if}
-										<p class="inline">{message.timeStamp}</p>
-									</div>
-								</li>
-							{:else if message.type == 'follow' && eProps.view.follows.active == true}
-								<li class={listClasses.follow}>
-									<p class="inline">{message.nickname + ' just followed!'}</p>
-									<div
-										class="inline w-[30%] h-[90%] grid grid-rows-auto grid-gap-2  ring ring-gap-2 rounded-lg"
-									>
-										<p class="inline">{message.timeStamp}</p>
-									</div>
-								</li>
-							{:else if message.type == 'share' && eProps.view.shares.active == true}
-								<li class={listClasses.share}>
-									<p class="inline">{message.nickname + ' just shared the stream!'}</p>
-									<div
-										class="inline w-[30%] h-[90%] grid grid-rows-auto grid-gap-2  ring ring-gap-2 rounded-lg"
-									>
-										<p class="inline">{message.timeStamp}</p>
+									<div class="col-start-7 col-end-7 text-right float-right mr-5">
+										{message.timeStamp}
 									</div>
 								</li>
 							{/if}

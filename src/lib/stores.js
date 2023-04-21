@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import { chatLayouts } from "./gridSchema";
+import { chatLayouts } from "./gridStores";
 
 let chatLayout = chatLayouts.left_full;
 let evtLayout = chatLayouts.right_full;
@@ -8,6 +8,8 @@ export const username = writable('');
 export const followCount = writable(0);
 export const viewCount = writable(0);
 export const loggedIn = writable(false);
+export const chatPosition = writable(chatLayout);
+
 
 export const chatProps = writable(JSON.stringify({
     open: false,
