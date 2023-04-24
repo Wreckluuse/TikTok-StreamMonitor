@@ -1,7 +1,7 @@
 <script>
 	import { giftInfo, subInfo, followInfo, shareInfo } from '../eventStores';
 	import { evtposX, evtposY, evtHeight, evtWidth } from '../gridStores';
-	import { scale } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 
 	let settingsOpen = false;
@@ -58,47 +58,67 @@
 	}
 </script>
 
-
-<div style:grid-column-start={layout.x} style:grid-column-end={layout.w} style:grid-row-start={layout.y} style:grid-row-end={layout.h} class="backdrop-blur-sm bg-white/50 drop-shadow-2xl scroll-auto rounded-lg h-full w-full">
-
-	<p
-		class="mx-auto text-center text-zinc-100 text-2xl w-full z-5 ring-2 ring-white/25 ring-inset shadow-2xl rounded-t-lg"
-	>
-		Events
-	</p>
-
-	{#if settingsOpen == true}
+<div
+	style:grid-column-start={layout.x}
+	style:grid-column-end={layout.w}
+	style:grid-row-start={layout.y}
+	style:grid-row-end={layout.h}
+	class="bg-secondary shadow scroll-auto rounded-sm h-full w-full"
+>
+	{#if settingsOpen}
+		<!-- svelte-ignore missing-declaration -->
 		<div
-			class="fixed top-[4px] right-[5%] grid grid-cols-5 grid-gap-1 justify-center w-[90%] backdrop-blur-sm bg-white/50 drop-shadow-2xl"
-			transition:scale={{ duration: 500, opacity: 1, start: 0.8, easing: quintOut }}
+			class="inline grid grid-cols-5 grid-gap-1 z-10 w-full h-[4%] bg-accent shadow text-sm rounded-t-sm"
+
+			transition:fly={{opacity: 1, duration: 10, y: -10 }}
+
 		>
-			<div class="text-gray-700 w-max">
-				<input type="checkbox" bind:checked={localFilters.gifts} /> Gifts
+			<div class="text-gray-700 w-full mt-1">
+				<input
+					class="toggle toggle-sm toggle-primary"
+					type="checkbox"
+					bind:checked={localFilters.gifts}
+				/> Gifts
 			</div>
-			<div class="text-gray-700 w-max">
-				<input type="checkbox" bind:checked={localFilters.subs} /> Subs
+			<div class="text-gray-700 w-full mt-1">
+				<input
+					class="toggle toggle-sm toggle-primary"
+					type="checkbox"
+					bind:checked={localFilters.subs}
+				/> Subs
 			</div>
-			<div class="text-gray-700 w-max">
-				<input type="checkbox" bind:checked={localFilters.follows} /> Follows
+			<div class="text-gray-700 w-full mt-1">
+				<input
+					class="toggle toggle-sm toggle-primary"
+					type="checkbox"
+					bind:checked={localFilters.follows}
+				/> Follows
 			</div>
-			<div class="text-gray-700 w-max">
-				<input type="checkbox" bind:checked={localFilters.shares} /> Shares
+			<div class="text-gray-700 w-full mt-1">
+				<input
+					class="toggle toggle-sm text-sm toggle-primary"
+					type="checkbox"
+					bind:checked={localFilters.shares}
+				/> Shares
 			</div>
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
-			<div
-				on:click={updateFilters}
-				class="text-gray-700 w-[100%] text-center bg-zinc-100 rounded-md select-none hover:drop-shadow-xl transition transform hover:-translate-y-1"
-			>
-				Update Filters
-			</div>
+			<div on:click={updateFilters} class="btn btn-primary border-zinc-100 btn-xs mt-1 mr-1">Update Filters</div>
 		</div>
 	{/if}
+	<div class="inline h-[4%] flex flex-cols w-full rounded-t-sm">
+		<div
+			class="  bg-accent pr-5 place-items-left text-2xl text-zinc-100 w-full z-5 shadow rounded-t-sm"
+		>
+			Events
+		</div>
 
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
-	<div on:click={toggleSettings}>
-		<i
-			class="fixed right-[7px] top-[7px] text-xl ml-[90%] fa-solid fa-filter text-zinc-100 hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
-		/>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<div class="inline w-fit rounded-tr-sm float-right bg-accent" on:click={toggleSettings}>
+			<i
+				class=" text-xl z-6 mr-2 mt-1 fa-solid fa-filter text-zinc-100 hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
+			/>
+		</div>
 	</div>
-		<slot class="shadow-inner scroll-auto overflow-y-scroll overflow-x-hidden text-gray-700" />
+
+	<slot class="shadow-inner scroll-auto overflow-y-scroll overflow-x-hidden text-secondary-content" />
 </div>

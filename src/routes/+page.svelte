@@ -10,6 +10,7 @@
 	import { username, followCount, viewCount, loggedIn } from '../lib/userStores';
 	import EvtBox from '../lib/evtBox/evtBox.svelte';
 	import Modal from '../lib/modal/modal.svelte';
+	import ChatMessage from '../lib/chatMessage/chatMessage.svelte';
 
 	let chatMessages = [];
 	let chatElement;
@@ -82,6 +83,8 @@
 	let modalPfp = '';
 	let modalFollowCount = 0;
 	let modalColor = '#9ca3af;';
+	let modalBio = '';
+	let modal_createDate = '0';
 
 	username.subscribe((value) => {
 		uname = value;
@@ -121,11 +124,11 @@
 
 	modColor.subscribe((value) => {
 		mColor = value;
-	})
+	});
 
 	subColor.subscribe((value) => {
 		sColor = value;
-	})
+	});
 
 	function getViewerColor(roles) {
 		let outColor;
@@ -137,19 +140,21 @@
 				break;
 			}
 		}
-		switch(outRole) {
-			case "mod":
+
+		switch (outRole) {
+			case 'mod':
 				outColor = mColor;
 				break;
-			case "sub":
+			case 'sub':
 				outColor = sColor;
 				break;
-			case "follower":
+			case 'follower':
 				outColor = dColor;
 				break;
 			default:
 				outColor = dColor;
 		}
+
 		return outColor;
 	}
 
@@ -165,13 +170,14 @@
 		settingsboxOpen = !settingsboxOpen;
 	}
 
-	function openModal(name, pfp, fCount, color, badges) {
+	function openModal(name, pfp, fCount, color, bio, createDate) {
 		showModal = true;
 		modalNickname = name;
 		modalPfp = pfp;
 		modalFollowCount = fCount;
 		modalColor = color;
-		modalBadges = badges;
+		modalBio = bio;
+		modal_createDate = createDate;
 	}
 
 	afterUpdate(() => {
@@ -199,12 +205,6 @@
 		io.emit('beginDC');
 	}
 
-	let listClasses = {
-		gift: 'background-sky-200 ring-2 h-[10%] grid grid-cols-2 text-justify ring-white/25 ',
-		sub: 'background-sky-200 ring-2 h-[10%] grid grid-cols-2 text-justify ring-white/25 ',
-		follow: 'background-sky-200 ring-2 h-[10%] grid grid-cols-2 text-justify ring-white/25 ',
-		share: 'background-sky-200 ring-2 h-[10%] grid grid-cols-2 text-justify ring-white/25 '
-	};
 </script>
 
 <head>
@@ -215,63 +215,71 @@
 	<title>Live Monitor</title>
 </svelte:head>
 
-<body>
-	<Modal {modalNickname} {modalPfp} {modalFollowCount} {modalColor} bind:showModal />
+<body class="bg-base-100">
+	<Modal
+		{modalNickname}
+		{modalPfp}
+		{modalColor}
+		{modalFollowCount}
+		{modalBio}
+		{modal_createDate}
+		bind:showModal
+	/>
 
-	{#if loggedInState}
-		<div
-			class="mt-5 ml-[5%] fixed backdrop-blur-sm bg-white/50 shadow-2xl rounded-md grid grid-rows-auto grid-gap-2 h-auto w-[15%] ring-sky-100 px-5 pb-2 text-gray-700"
-		>
-			<div>
-				<div name="inline currentStreamer">
-					<p class="inline">Live:</p>
-					{'@' + uname}
-				</div>
-			</div>
-			<div>
-				<div name="viewCount inline">
-					<p class="inline">Viewers:</p>
-					{viewers}
-				</div>
-			</div>
-		</div>
-	{:else}
-		<div
-			class="mt-5 ml-[2%] fixed backdrop-blur-sm bg-white/50 shadow-2xl h-[10%] w-[15%] ring-sky-100 text-gray-700 rounded-md "
-		>
-			<p class="text-center mt-5">Stream disconnected</p>
-		</div>
-	{/if}
+	<!-- {#if loggedInState} -->
+		<!-- <div -->
+			<!-- class="overflow-y-hidden bg-info stats-vertical mt-5 ml-[5%] fixed backdrop-blur-sm shadow-2xl rounded-md grid grid-rows-auto grid-gap-2 h-[7%] w-[15%] px-5 pb-2" -->
+		<!-- > -->
+			<!-- <div class="stat h-[50%]"> -->
+				<!-- <div name=" inline currentStreamer h-[50%]"> -->
+					<!-- <p class="inline text-sm">Live:</p> -->
+					<!-- {'@' + uname} -->
+				<!-- </div> -->
+			<!-- </div> -->
+			<!-- <div class="stat h-[50%]"> -->
+				<!-- <div name="viewCount inline h-[50%]"> -->
+					<!-- <p class="inline text-sm">Viewers:</p> -->
+					<!-- {viewers} -->
+				<!-- </div> -->
+			<!-- </div> -->
+		<!-- </div> -->
+	<!-- {:else} -->
+		<!-- <div -->
+			<!-- class="mt-5 ml-[2%] fixed backdrop-blur-sm bg-info shadow-2xl h-[10%] w-[15%] rounded-md " -->
+		<!-- > -->
+			<!-- <p class="text-center mt-5">Stream disconnected</p> -->
+		<!-- </div> -->
+	<!-- {/if} -->
 	<Nav>
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<div on:click={loginPopup}>
+		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full" on:click={loginPopup}>
 			<i
-				class="fa-brands text-zinc-100 fa-tiktok login hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="fa-brands text-zinc-100 fa-tiktok login hover:text-accent hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
-		</div>
+		</button>
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<div on:click={openChat}>
+		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full" on:click={openChat}>
 			<i
-				class="openChat text-zinc-100  fa-solid fa-message hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="openChat text-primary  fa-solid fa-message hover:text-accent  hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
-		</div>
+		</button>
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<div on:click={openEvt}>
+		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full" on:click={openEvt}>
 			<i
-				class="fa-regular  text-zinc-100 fa-bell events hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="fa-regular  text-secondary fa-bell events hover:text-accent  hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
-		</div>
-		<div>
+		</button>
+		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl w-full h-full hover:active">
 			<i
-				class="fa-solid text-zinc-100  fa-stopwatch timerButton hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="fa-solid text-yellow-400  fa-stopwatch timerButton hover:text-accent  hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
-		</div>
+		</button>
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<div on:click={openCfg}>
+		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full" on:click={openCfg}>
 			<i
-				class="fa-regular text-zinc-100 fa-solid fa-gear settingsButton hover:text-gray-500 hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="fa-regular text-gray-300 fa-solid fa-gear settingsButton hover:text-accent  hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
-		</div>
+		</button>
 	</Nav>
 	{#if settingsboxOpen}
 		<div
@@ -290,50 +298,39 @@
 			</div>
 		</div>
 	{/if}
-	<div class="h-5/6 w-7/8 ml-4 mr-4">
+	<div class="h-[90%] w-7/8 ml-4 mr-4">
 		<ContentGrid>
 			{#if cboxOpen}
 				<ChatBox>
-					<ul
-						class="h-[90%] w-[98%] mt-2 overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
+					<div
 						bind:this={chatElement}
+						class="overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2 h-[90%] w-[98%] mt-2"
 					>
-						{#each chatMessages as message}
-							<!-- svelte-ignore a11y-click-events-have-key-events -->
-							<li
-								on:click={openModal(
-									message.nickname,
-									message.profilePictureUrl,
-									message.followCount,
-									message.color
-								)}
-								class="inline h-[7%] grid grid-cols-2"
-							>
-								<div class="col-start-1 col-end-2 w-full">
-									<img
-										height="20"
-										width="20"
-										class="rounded-md inline"
-										src={message.profilePictureUrl}
-										alt={message.nickname + "'s Profile Picture"}
-									/>
-									<p style:color={message.color} class="inline">{' ' + message.nickname}</p>
-									<p class="break-words inline text-gray-700 whitespace-normal">
-										{': ' + message.msgContent}
-									</p>
-								</div>
-								<div class="col-start-2 col-end-2 w-full">
-									<p class="float-right text-left mr-5 text-gray-700 inline">{message.timeStamp}</p>
-								</div>
-							</li>
-						{/each}
-					</ul>
+						<table class="table-normal h-full w-full">
+							<!-- <ul
+						class="list-outside h-[90%] w-[98%] mt-2 overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
+						bind:this={chatElement}
+					> -->
+							{#each chatMessages as message}
+								<ChatMessage
+									chat_pfpUrl={message.profilePictureUrl}
+									chat_nickname={message.nickname}
+									chat_roles={message.roles}
+									chat_messageContent={message.msgContent}
+									chat_timeStamp={message.timeStamp}
+									chat_badges={message.badges}
+								/>
+
+							{/each}
+						</table>
+					</div>
+					<!-- </ul> -->
 				</ChatBox>
 			{/if}
 			{#if eboxOpen}
 				<EvtBox>
 					<ul
-						class="divide-y divide-solid mt-2 h-[90%] w-[98%] text-gray-700 overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
+						class="divide-y divide-solid mt-2 h-[90%] w-[98%] text-base-content overflow-x-hidden overflow-y-scroll scrollbar-thin scrollbar-rounded-lg scrollbar-thumb-gray-900 scrollbar-track-gray-100 ml-2"
 						bind:this={evtElement}
 					>
 						{#each evtMessages as message, i}
@@ -345,10 +342,10 @@
 											message.nickname,
 											message.profilePictureUrl,
 											message.followCount,
-											message.color
+											getViewerColor(message.roles)
 										)}
 										style={'background-image: url(' + message.profilePictureUrl + ')'}
-										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-gray-500 ml-2 grid grid-cols-3 grid-rows-"
+										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-primary-content ml-2 grid grid-cols-3 grid-rows-"
 									/>
 									<div class="w-full col-start-3 col-end-7 text-left float-left">
 										<p>
@@ -378,7 +375,7 @@
 											message.color
 										)}
 										style={'background-image: url(' + message.profilePictureUrl + ')'}
-										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-gray-500 ml-2 grid grid-cols-3 grid-rows-"
+										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-primary-content ml-2 grid grid-cols-3 grid-rows-"
 									/>
 									<div class="w-full col-start-3 col-end-7 text-left float-left">
 										<p>
@@ -403,7 +400,7 @@
 											message.color
 										)}
 										style={'background-image: url(' + message.profilePictureUrl + ')'}
-										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-gray-500 ml-2 grid grid-cols-3 grid-rows-"
+										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-primary-content ml-2 grid grid-cols-3 grid-rows-"
 									/>
 									<div class="w-full col-start-3 col-end-7 text-left float-left">
 										<p>{message.nickname + ' just followed!'}</p>
@@ -423,7 +420,7 @@
 											message.color
 										)}
 										style={'background-image: url(' + message.profilePictureUrl + ')'}
-										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-gray-500 ml-2 grid grid-cols-3 grid-rows-"
+										class="w-[30%] h-[80%] mt-1 transition transform hover:-translate-y-[1px] shadow-2xl bg-cover bg-center col-start-1 col-end-3 rounded-lg bg-zinc-100 text-primary-content ml-2 grid grid-cols-3 grid-rows-"
 									/>
 									<div class="w-full col-start-3 col-end-7 text-left float-left">
 										<p>{message.nickname + ' just shared the stream!'}</p>
@@ -449,13 +446,13 @@
 		left: 0;
 		height: 100vh;
 		width: 100vw;
-		background: rgb(230, 252, 255);
+		/*background: rgb(230, 252, 255);
 		background: radial-gradient(
 			circle,
 			rgba(230, 252, 255, 1) 0%,
 			rgba(46, 255, 253, 1) 5%,
 			rgba(38, 38, 38, 1) 100%
-		);
+		); */
 	}
 	.openChat {
 		height: 50px;

@@ -1,0 +1,1 @@
+cd E:\PersonalProjects\TikTokEventsMicroSeoService ; node server.js
