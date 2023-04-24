@@ -1,6 +1,6 @@
 import ioClient from 'socket.io-client';
 
-const ENDPOINT = 'http://localhost:3000';
+const ENDPOINT = 'https://tiktok-streammonitor-eventsmicroservice.azurewebsites.net/';
 const socket = ioClient(ENDPOINT, {
     extraHeaders: {
         "chat-traffic": "test"
