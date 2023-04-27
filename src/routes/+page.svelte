@@ -7,19 +7,28 @@
 	import ChatBox from '../lib/chatBox/chatBox.svelte';
 	import { modColor, subColor, defaultColor } from '../lib/chatStores';
 	import { evtOpen, giftInfo, subInfo, followInfo, shareInfo } from '../lib/eventStores';
-	import { username, followCount, viewCount, loggedIn } from '../lib/userStores';
+	import { username, displayName, bio, followCount, followingCount, viewCount, loggedIn } from '../lib/userStores';
 	import EvtBox from '../lib/evtBox/evtBox.svelte';
 	import Modal from '../lib/modal/modal.svelte';
 	import ChatMessage from '../lib/chatMessage/chatMessage.svelte';
+	import { slide } from 'svelte/transition';
+	import { quintInOut } from 'svelte/easing';
 
 	let chatMessages = [];
 	let chatElement;
 	let evtMessages = [];
 	let evtElement;
 
-	onMount(() => {
-		io.on('connectionSuccessful', () => {
+	io.on('connected', (data) => {
+			if (data) {
+			const payload = JSON.parse(data);
+			console.info(payload)
 			loggedIn.update((prop) => (prop = true));
+			displayName.update((prop) => (prop = payload.state.nickname));
+			followCount.update((prop) => (prop = payload.state.follow_info.follower_count));
+			followingCount.update((prop) => ( prop = payload.state.follow_info.following_count));
+			bio.update((prop) => (prop = payload.state.bio_description));
+			}
 		});
 
 		io.on('connectionUnsuccessful', () => {
@@ -30,6 +39,10 @@
 			const payload = JSON.parse(data);
 			viewCount.update((n) => (n = payload.viewers));
 			username.update((name) => (name = payload.streamerName));
+				displayName.update((prop) => (prop = payload.displayName));
+			followCount.update((prop) => (prop = payload.followers));
+			followingCount.update((prop) => ( prop = payload.following));
+			bio.update((prop) => (prop = payload.bio));
 			loggedIn.update((p) => (p = true));
 		});
 
@@ -48,25 +61,20 @@
 			chatMessages = [];
 			evtMessages = [];
 		});
-	});
 
 	//functions for handling username and tiktok connection
 
-	function loginPopup() {
-		let uName = prompt('<PLACEHOLDER> Please input your username');
-		if (uName == null || uName == '') {
-			alert('Error: Not a valid username.');
-		} else {
-			username.update((prop) => (prop = uName));
-			io.emit('tryConnection', uName);
+	function tryLogin(name) {
+		if (name == null || name == '') {
+			return 'Oops! Something went wrong, please try again.';
+		 } else {
+		 	username.update((prop) => (prop = name));
+		 	io.emit('tryConnection', name);
 		}
 	}
 
 	//Main Content
 
-	let uname;
-	let followers;
-	let viewers;
 	let loggedInState;
 	let cboxOpen = false;
 	let eboxOpen = false;
@@ -85,10 +93,22 @@
 	let modalColor = '#9ca3af;';
 	let modalBio = '';
 	let modal_createDate = '0';
+	let streamerTabOpen = false;
+	let uname = '';
+	let dispName = '';
+	let viewers;
+	let followers;
+	let following;
+	let streamerBio;
+	let streamerPFP;
 
 	username.subscribe((value) => {
 		uname = value;
 	});
+
+	displayName.subscribe((value) => {
+		dispName = value;
+	})
 
 	viewCount.subscribe((value) => {
 		viewers = value;
@@ -97,6 +117,14 @@
 	followCount.subscribe((value) => {
 		followers = value;
 	});
+
+	followingCount.subscribe((value) => {
+		following = value;
+	})
+
+	bio.subscribe((value) => {
+		streamerBio = value;
+	})
 
 	loggedIn.subscribe((value) => {
 		loggedInState = value;
@@ -129,6 +157,7 @@
 	subColor.subscribe((value) => {
 		sColor = value;
 	});
+
 
 	function getViewerColor(roles) {
 		let outColor;
@@ -180,6 +209,10 @@
 		modal_createDate = createDate;
 	}
 
+	function openStreamerTab() {
+		streamerTabOpen = !streamerTabOpen;
+	}
+
 	afterUpdate(() => {
 		if (cboxOpen && chatMessages.length > 0) scrollToBottom(chatElement);
 		if (eboxOpen && evtMessages.length > 0) scrollToBottom(evtElement);
@@ -204,7 +237,6 @@
 	function disconnect() {
 		io.emit('beginDC');
 	}
-
 </script>
 
 <head>
@@ -226,64 +258,87 @@
 		bind:showModal
 	/>
 
-	<!-- {#if loggedInState} -->
-		<!-- <div -->
-			<!-- class="overflow-y-hidden bg-info stats-vertical mt-5 ml-[5%] fixed backdrop-blur-sm shadow-2xl rounded-md grid grid-rows-auto grid-gap-2 h-[7%] w-[15%] px-5 pb-2" -->
-		<!-- > -->
-			<!-- <div class="stat h-[50%]"> -->
-				<!-- <div name=" inline currentStreamer h-[50%]"> -->
-					<!-- <p class="inline text-sm">Live:</p> -->
-					<!-- {'@' + uname} -->
-				<!-- </div> -->
-			<!-- </div> -->
-			<!-- <div class="stat h-[50%]"> -->
-				<!-- <div name="viewCount inline h-[50%]"> -->
-					<!-- <p class="inline text-sm">Viewers:</p> -->
-					<!-- {viewers} -->
-				<!-- </div> -->
-			<!-- </div> -->
-		<!-- </div> -->
-	<!-- {:else} -->
-		<!-- <div -->
-			<!-- class="mt-5 ml-[2%] fixed backdrop-blur-sm bg-info shadow-2xl h-[10%] w-[15%] rounded-md " -->
-		<!-- > -->
-			<!-- <p class="text-center mt-5">Stream disconnected</p> -->
-		<!-- </div> -->
-	<!-- {/if} -->
+	{#if streamerTabOpen}
+		{#if loggedInState}
+			<div
+				transition:slide={{ x: -100, y: 0, opacity: 1, duration: 300, easing: quintInOut }}
+				class="stats shadow bg-neutral fixed  bottom-[90px] left-[20px] rounded-lg"
+			>
+				<div class="stat">
+					<div class="stat-title text-neutral-content">
+						<i class="fa-brands fa-tiktok" /> Connected
+					</div>
+					<div class="stat-value text-primary">{dispName}</div>
+					<div class="stat-description">{"@" + uname}</div>
+				</div>
+				<div class="stat">
+
+				</div>
+			</div>
+		{:else}
+			<div
+				transition:slide={{ x: -100, y: 0, opacity: 1, duration: 300, easing: quintInOut }}
+				class="w-[300px] h-[150px] bg-neutral shadow fixed text-center text-neutral-content bottom-[90px] left-[20px] rounded-lg"
+			>
+				<div class="ring-zinc-100 bg-base-100 rounded-sm ring-1 w-[70%] text-zinc-100 ml-auto mr-auto shadow">
+					Disconnected
+				</div>
+				<div class="rounded-xl w-[80%] ml-auto mr-auto text-sm text-neutral-content mt-10 bg-secondary shadow">
+					<input class="float-left" bind:value={uname} type="text" placeholder="Username" />
+					<button
+						class="w-fit h-fit px-[3px] rounded-md hover:drop-shadow-xl text-zinc-100 transition transform hover:-translate-y-1"
+						on:click={tryLogin(uname)}
+					>Connect</button>
+				</div>
+			</div>
+		{/if}
+	{/if}
 	<Nav>
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full" on:click={loginPopup}>
+		<button
+			class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full"
+			on:click={openStreamerTab}
+		>
 			<i
-				class="fa-brands text-zinc-100 fa-tiktok login hover:text-accent hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="fa-solid text-zinc-100 fa-tower-broadcast login hover:text-accent hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
 		</button>
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full" on:click={openChat}>
+		<button
+			class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full"
+			on:click={openChat}
+		>
 			<i
-				class="openChat text-primary  fa-solid fa-message hover:text-accent  hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="openChat text-primary fa-solid fa-message hover:text-accent hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
 		</button>
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full" on:click={openEvt}>
+		<button
+			class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full"
+			on:click={openEvt}
+		>
 			<i
-				class="fa-regular  text-secondary fa-bell events hover:text-accent  hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="fa-regular text-secondary fa-bell events hover:text-accent hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
 		</button>
 		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl w-full h-full hover:active">
 			<i
-				class="fa-solid text-yellow-400  fa-stopwatch timerButton hover:text-accent  hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="fa-solid text-yellow-400 fa-stopwatch timerButton hover:text-accent hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
 		</button>
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<button class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full" on:click={openCfg}>
+		<button
+			class="bg-neutral pt-2 pb=2 hover:shadow-inner-2xl hover:active w-full h-full"
+			on:click={openCfg}
+		>
 			<i
-				class="fa-regular text-gray-300 fa-solid fa-gear settingsButton hover:text-accent  hover:drop-shadow-xl transition transform hover:-translate-y-1"
+				class="fa-regular text-gray-300 fa-solid fa-gear settingsButton hover:text-accent hover:drop-shadow-xl transition transform hover:-translate-y-1"
 			/>
 		</button>
 	</Nav>
 	{#if settingsboxOpen}
 		<div
-			class="top-5 pt-2 right-7 fixed backdrop-blur-sm bg-white/50 shadow-2xl rounded-md h-min  w-[20%] ring-sky-100 px-5 pb-2 text-gray-700"
+			class="top-5 pt-2 right-7 fixed backdrop-blur-sm bg-white/50 shadow-2xl rounded-md h-min w-[20%] ring-sky-100 px-5 pb-2 text-gray-700"
 		>
 			<div class="grid grid-rows-auto gap-2 w-[30%] h-[98%]">
 				<button class="btn text-gray-500 btn-primary btn-xs"> Chat </button>
@@ -320,7 +375,6 @@
 									chat_timeStamp={message.timeStamp}
 									chat_badges={message.badges}
 								/>
-
 							{/each}
 						</table>
 					</div>

@@ -2,7 +2,7 @@
 	import { giftInfo, subInfo, followInfo, shareInfo } from '../eventStores';
 	import { evtposX, evtposY, evtHeight, evtWidth } from '../gridStores';
 	import { fly } from 'svelte/transition';
-	import { quintOut } from 'svelte/easing';
+	import { quintInOut } from 'svelte/easing';
 
 	let settingsOpen = false;
 	let localFilters = {
@@ -59,6 +59,7 @@
 </script>
 
 <div
+	transition:fly={{y: 25, duration: 300, easing: quintInOut}}
 	style:grid-column-start={layout.x}
 	style:grid-column-end={layout.w}
 	style:grid-row-start={layout.y}
@@ -73,28 +74,28 @@
 			transition:fly={{opacity: 1, duration: 10, y: -10 }}
 
 		>
-			<div class="text-gray-700 w-full mt-1">
+			<div class="text-accent-content w-full mt-1">
 				<input
 					class="toggle toggle-sm toggle-primary"
 					type="checkbox"
 					bind:checked={localFilters.gifts}
 				/> Gifts
 			</div>
-			<div class="text-gray-700 w-full mt-1">
+			<div class="text-accent-content w-full mt-1">
 				<input
 					class="toggle toggle-sm toggle-primary"
 					type="checkbox"
 					bind:checked={localFilters.subs}
 				/> Subs
 			</div>
-			<div class="text-gray-700 w-full mt-1">
+			<div class="text-accent-content w-full mt-1">
 				<input
 					class="toggle toggle-sm toggle-primary"
 					type="checkbox"
 					bind:checked={localFilters.follows}
 				/> Follows
 			</div>
-			<div class="text-gray-700 w-full mt-1">
+			<div class="text-accent-content w-full mt-1">
 				<input
 					class="toggle toggle-sm text-sm toggle-primary"
 					type="checkbox"
@@ -107,7 +108,7 @@
 	{/if}
 	<div class="inline h-[4%] flex flex-cols w-full rounded-t-sm">
 		<div
-			class="  bg-accent pr-5 place-items-left text-2xl text-zinc-100 w-full z-5 shadow rounded-t-sm"
+			class="  bg-accent pr-5 place-items-left text-2xl text-secondary-content w-full z-5 shadow rounded-t-sm"
 		>
 			Events
 		</div>

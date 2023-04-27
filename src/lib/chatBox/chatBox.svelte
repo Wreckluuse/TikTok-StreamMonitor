@@ -55,7 +55,7 @@
 	}
 </script>
 
-<div
+<div transition:fly={{y: 25, duration: 300, easing: quintInOut}}
 	style:grid-column-start={layout.x}
 	style:grid-column-end={layout.w}
 	style:grid-row-start={layout.y}
